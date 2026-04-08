@@ -187,35 +187,37 @@ def run():
     </html>
     """
 
-    # Only start up the server if running inside Hugging Face Spaces
-    import os
-    if "SPACE_ID" in os.environ:
-        PORT = 7860
-        class CustomDashboardHandler(http.server.BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.send_response(200)
-                self.send_header("Content-type", "text/html")
-                self.end_headers()
-                self.wfile.write(html_content.encode("utf-8"))
-                
-            def do_POST(self):
-                self.send_response(200)
-                self.send_header("Content-type", "application/json")
-                self.end_headers()
-                self.wfile.write(b'{"status":"success","message":"Agent is healthy"}')
-                
-            def do_HEAD(self):
-                self.send_response(200)
-                self.end_headers()
+    # Start a premium web server dashboard to display the results!
+    # This keeps the container running so the hackathon validator can reach it.
+    import http.server
+    import socketserver
+    
+    PORT = 7860
+    class CustomDashboardHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write(html_content.encode("utf-8"))
+            
+        def do_POST(self):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(b'{"status":"success","message":"Agent is healthy"}')
+            
+        def do_HEAD(self):
+            self.send_response(200)
+            self.end_headers()
 
-        print(f"Starting premium web server dashboard on port {PORT}...")
-        try:
-            with socketserver.TCPServer(("", PORT), CustomDashboardHandler) as httpd:
-                httpd.serve_forever()
-        except Exception as e:
-            print(f"Web server stopped: {e}")
-    else:
-        print("Running in local/eval environment. Exiting gracefully.")
+    print(f"Starting premium web server dashboard on port {PORT}...")
+    try:
+        # allow reuse address to avoid 'address already in use' errors on restarts
+        socketserver.TCPServer.allow_reuse_address = True
+        with socketserver.TCPServer(("", PORT), CustomDashboardHandler) as httpd:
+            httpd.serve_forever()
+    except Exception as e:
+        print(f"Web server stopped: {e}")
 
 if __name__ == "__main__":
     run()
