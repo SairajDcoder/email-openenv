@@ -191,6 +191,16 @@ def run():
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
                 self.wfile.write(html_content.encode("utf-8"))
+                
+            def do_POST(self):
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"status":"success","message":"Agent is healthy"}')
+                
+            def do_HEAD(self):
+                self.send_response(200)
+                self.end_headers()
 
         print(f"Starting premium web server dashboard on port {PORT}...")
         try:
