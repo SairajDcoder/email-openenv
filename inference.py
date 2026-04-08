@@ -18,25 +18,34 @@ else:
     client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
 
-def get_action(email):
-    prompt = f"""
-    You are an email assistant.
-
-    Steps:
-    1. classify email as spam/important/normal
-    2. choose action (ignore/reply/escalate)
-
-    Email: {email}
-
-    Output format:
-    classify:<label>
-    OR
-    reply:<text>
-    OR
-    ignore
-    OR
-    escalate
-    """
+def get_action(email, step_count):
+    if step_count == 1:
+        prompt = f"""
+        You are an email assistant.
+        Email: {email}
+        Determine if the email is 'spam', 'important', or 'normal'.
+        Rules for classification:
+        - "Win a free iPhone", "Discount offer", "Claim your reward" -> spam
+        - "Team meeting", "Project deadline", "URGENT" -> important
+        - "Weekly newsletter", "Update preferences" -> normal
+        
+        Output ONLY one of these exact strings:
+        classify:spam
+        classify:important
+        classify:normal
+        """
+    else:
+        prompt = f"""
+        You are an email assistant.
+        Email: {email}
+        Determine what action to take based on the email.
+        Rules for actions:
+        - If it is spam or a normal newsletter/notification -> ignore
+        - If it's a team meeting or project deadline -> reply:Got it!
+        - If it is URGENT (like account verification) -> escalate
+        
+        Output ONLY the chosen action string (ignore, escalate, or reply:<msg>).
+        """
 
     if hasattr(client, "chat_completion"):
         res = client.chat_completion(
@@ -65,7 +74,7 @@ def run():
         while True:
             step_count += 1
 
-            action_str = get_action(obs.email_text)
+            action_str = get_action(obs.email_text, step_count)
 
             action = Action(action=action_str)
 
