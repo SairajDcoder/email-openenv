@@ -1,6 +1,6 @@
 name: email_env
 description: Email classification RL environment
-version: 1.0
+version: "1.0"
 
 observation:
   type: object
@@ -10,3 +10,22 @@ action:
 
 reward:
   type: float
+
+tasks:
+  - id: easy
+    name: "Easy - Spam Detection"
+    description: "Classify simple spam vs important emails"
+    grader: grader.py
+    difficulty: easy
+
+  - id: medium
+    name: "Medium - Multi-category Classification"
+    description: "Classify emails into spam, important, or normal"
+    grader: grader.py
+    difficulty: medium
+
+  - id: hard
+    name: "Hard - Multi-step Decision Making"
+    description: "Classify and take appropriate action on complex emails"
+    grader: grader.py
+    difficulty: hard
