@@ -181,20 +181,25 @@ def run():
     </html>
     """
 
-    PORT = 7860
-    class CustomDashboardHandler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write(html_content.encode("utf-8"))
+    # Only start up the server if running inside Hugging Face Spaces
+    import os
+    if "SPACE_ID" in os.environ:
+        PORT = 7860
+        class CustomDashboardHandler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                self.wfile.write(html_content.encode("utf-8"))
 
-    print(f"Starting premium web server dashboard on port {PORT}...")
-    try:
-        with socketserver.TCPServer(("", PORT), CustomDashboardHandler) as httpd:
-            httpd.serve_forever()
-    except Exception as e:
-        print(f"Web server stopped: {e}")
+        print(f"Starting premium web server dashboard on port {PORT}...")
+        try:
+            with socketserver.TCPServer(("", PORT), CustomDashboardHandler) as httpd:
+                httpd.serve_forever()
+        except Exception as e:
+            print(f"Web server stopped: {e}")
+    else:
+        print("Running in local/eval environment. Exiting gracefully.")
 
 if __name__ == "__main__":
     run()
