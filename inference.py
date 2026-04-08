@@ -8,6 +8,8 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 if HF_TOKEN is None:
     raise ValueError("HF_TOKEN is required")
+    
+HF_TOKEN = HF_TOKEN.strip()
 
 if "huggingface" in API_BASE_URL:
     from huggingface_hub import InferenceClient
