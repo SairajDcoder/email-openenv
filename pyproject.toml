@@ -12,5 +12,11 @@ authors = [
 dependencies = [
     "openai",
     "huggingface_hub",
-    "pydantic"
+    "pydantic",
+    "openenv-core>=0.2.0",
+    "fastapi",
+    "uvicorn"
 ]
+
+[project.scripts]
+server = "server.app:main"
