@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "email-openenv"
+version = "1.0.0"
+description = "Email classification RL environment for Meta Hackathon"
+authors = [
+    { name = "SairajDcoder" }
+]
+dependencies = [
+    "openai",
+    "huggingface_hub",
+    "pydantic"
+]
