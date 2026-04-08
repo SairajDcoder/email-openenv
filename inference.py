@@ -9,7 +9,11 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 if HF_TOKEN is None:
     raise ValueError("HF_TOKEN is required")
 
-client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+if "huggingface" in API_BASE_URL:
+    from huggingface_hub import InferenceClient
+    client = InferenceClient(token=HF_TOKEN)
+else:
+    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
 
 def get_action(email):
@@ -32,10 +36,16 @@ def get_action(email):
     escalate
     """
 
-    res = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    if hasattr(client, "chat_completion"):
+        res = client.chat_completion(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}]
+        )
+    else:
+        res = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}]
+        )
 
     return res.choices[0].message.content.strip().lower().split("\n")[0]
 
