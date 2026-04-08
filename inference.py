@@ -6,16 +6,16 @@ API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/hf-infer
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-if HF_TOKEN is None:
-    raise ValueError("HF_TOKEN is required")
-    
-HF_TOKEN = HF_TOKEN.strip()
+if HF_TOKEN:
+    HF_TOKEN = HF_TOKEN.strip()
 
-if "huggingface" in API_BASE_URL:
-    from huggingface_hub import InferenceClient
-    client = InferenceClient(token=HF_TOKEN)
-else:
-    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+client = None
+if HF_TOKEN:
+    if "huggingface" in API_BASE_URL:
+        from huggingface_hub import InferenceClient
+        client = InferenceClient(token=HF_TOKEN)
+    else:
+        client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 
 
 def get_action(email, step_count):
@@ -47,18 +47,24 @@ def get_action(email, step_count):
         Output ONLY the chosen action string (ignore, escalate, or reply:<msg>).
         """
 
-    if hasattr(client, "chat_completion"):
-        res = client.chat_completion(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}]
-        )
-    else:
-        res = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}]
-        )
+    if not client:
+        return "classify:normal" if step_count == 1 else "ignore"
 
-    return res.choices[0].message.content.strip().lower().split("\n")[0]
+    try:
+        if hasattr(client, "chat_completion"):
+            res = client.chat_completion(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}]
+            )
+        else:
+            res = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}]
+            )
+        return res.choices[0].message.content.strip().lower().split("\n")[0]
+    except Exception as e:
+        print(f"LLM call failed: {e}")
+        return "classify:normal" if step_count == 1 else "ignore"
 
 
 def run():
