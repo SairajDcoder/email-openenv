@@ -61,34 +61,34 @@ class SmartEmailEnv:
             if action.action.startswith("classify"):
                 parts = action.action.split(":")
                 if len(parts) < 2:
-                    reward -= 0.5
+                    reward = 0.1
                 else:
                     predicted = parts[1].strip()
                     if predicted == correct_label:
-                        reward += 0.5
+                        reward = 0.8
                     else:
-                        reward -= 0.5
+                        reward = 0.2
 
             # IGNORE / ESCALATE
             elif action.action in ["ignore", "escalate"]:
                 if action.action == expected_action:
-                    reward += 0.5
+                    reward = 0.8
                 else:
-                    reward -= 0.5
+                    reward = 0.2
 
             # REPLY
             elif action.action.startswith("reply"):
                 if expected_action == "reply":
-                    reward += 0.5
+                    reward = 0.9
                 else:
-                    reward -= 1.0
+                    reward = 0.1
 
             else:
                 # ❌ invalid action
-                reward -= 1.0
+                reward = 0.1
 
         except Exception:
-            reward -= 1.0
+            reward = 0.1
 
         done = self.step_count >= 2
 

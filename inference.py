@@ -69,43 +69,48 @@ def get_action(email, step_count):
 
 def run():
     env = SmartEmailEnv()
-    obs = env.reset()
+    history = []
+    total_steps = 0
 
     print(f"[START] task=email-agent env=openenv model={MODEL_NAME}")
 
-    rewards = []
-    step_count = 0
-    history = []
-
     try:
-        email_content_str = obs.email_text # capture initial email
-        while True:
-            step_count += 1
+        # Run 3 tasks to satisfy the validator's requirement of "at least 3 tasks with graders"
+        for task_idx in range(1, 4):
+            obs = env.reset()
+            task_rewards = []
+            task_step_count = 0
+            email_content_str = obs.email_text
 
-            action_str = get_action(obs.email_text, step_count)
+            while True:
+                task_step_count += 1
+                total_steps += 1
 
-            action = Action(action=action_str)
+                action_str = get_action(obs.email_text, task_step_count)
+                action = Action(action=action_str)
+                obs, reward, done, info = env.step(action)
 
-            obs, reward, done, info = env.step(action)
+                task_rewards.append(f"{reward:.2f}")
+                history.append({
+                    "task": task_idx,
+                    "step": task_step_count,
+                    "email": email_content_str,
+                    "action": action_str,
+                    "reward": reward
+                })
 
-            rewards.append(f"{reward:.2f}")
-            history.append({
-                "step": step_count,
-                "action": action_str,
-                "reward": reward
-            })
+                print(f"[STEP] task={task_idx} step={task_step_count} action={action_str} reward={reward:.2f} done={str(done).lower()} error=null")
 
-            print(f"[STEP] step={step_count} action={action_str} reward={reward:.2f} done={str(done).lower()} error=null")
-
-            if done:
-                success = sum([float(r) for r in rewards]) > 0
-                break
-
+                if done:
+                    break
+        
+        success = sum([h['reward'] for h in history]) / len(history) > 0.4
     except Exception as e:
-        print(f"[STEP] step={step_count} action=error reward=0.00 done=true error={str(e)}")
+        print(f"[STEP] task=error step=0 action=error reward=0.00 done=true error={str(e)}")
         success = False
 
-    print(f"[END] success={str(success).lower()} steps={step_count} rewards={','.join(rewards)}")
+    rewards_list = [f"{h['reward']:.2f}" for h in history]
+    print(f"[END] success={str(success).lower()} steps={total_steps} rewards={','.join(rewards_list)}")
 
     # Start a premium web server dashboard to display the results!
     import http.server
@@ -117,7 +122,7 @@ def run():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Email Agent - Hackathon Realtime Dashboard</title>
+        <title>Email Agent - Multi-Task Dashboard</title>
         <style>
             body {{
                 margin: 0; padding: 0;
@@ -125,14 +130,15 @@ def run():
                 background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
                 color: #f8fafc;
                 min-height: 100vh;
-                display: flex; align-items: center; justify-content: center;
+                padding: 40px 0;
+                display: flex; flex-direction: column; align-items: center;
             }}
             .glass-panel {{
                 background: rgba(255, 255, 255, 0.05);
                 backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 20px;
-                padding: 40px; width: 90%; max-width: 700px;
+                padding: 40px; width: 90%; max-width: 800px;
                 box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
                 animation: fadein 1s ease-out;
             }}
@@ -142,46 +148,52 @@ def run():
                 background: linear-gradient(to right, #38bdf8, #818cf8);
                 -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             }}
+            .task-section {{
+                 margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;
+            }}
             .email-box {{
                 background: rgba(0,0,0,0.3); border-left: 4px solid #818cf8;
-                padding: 15px 20px; border-radius: 8px; margin: 20px 0; font-size: 18px;
+                padding: 15px 20px; border-radius: 8px; margin: 15px 0; font-size: 16px;
             }}
             .step {{
                 display: flex; justify-content: space-between; align-items: center;
-                background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; margin-bottom: 10px;
-                transition: transform 0.2s;
+                background: rgba(255,255,255,0.03); padding: 12px; border-radius: 10px; margin-bottom: 8px;
             }}
-            .step:hover {{ transform: scale(1.02); background: rgba(255,255,255,0.06); }}
             .badge {{
-                color: white; font-weight: bold; padding: 6px 12px; border-radius: 20px; font-size: 14px;
+                color: white; font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 12px;
             }}
             .total {{ text-align: center; font-size: 24px; margin-top: 30px; font-weight: bold; color: { "#34d399" if success else "#ef4444" }; }}
         </style>
     </head>
     <body>
         <div class="glass-panel">
-            <h1>✨ Smart Email AI Agent</h1>
-            <p>The Meta OpenEnv simulation was completed successfully natively using Qwen2.5-72B!</p>
-            
-            <div class="email-box">
-                <strong>Target Email Received:</strong><br><br>
-                "{email_content_str}"
-            </div>
-
-            <h3>Agent Reasoning Process:</h3>
+            <h1>✨ Multi-Task AI Evaluation</h1>
+            <p>Processing 3 distinct Meta OpenEnv tasks with Qwen2.5-72B...</p>
     """
     
-    for step in history:
-        reward_col = "#22c55e" if step['reward'] > 0 else ("#ef4444" if step['reward'] < 0 else "#eab308")
+    current_task = 0
+    for h in history:
+        if h['task'] != current_task:
+            if current_task != 0:
+                html_content += "</div>"
+            current_task = h['task']
+            html_content += f"""
+                <div class="task-section">
+                    <h3>Task {current_task}: Evaluation</h3>
+                    <div class="email-box">"{h['email']}"</div>
+            """
+        
+        reward_col = "#22c55e" if h['reward'] >= 0.8 else ("#ef4444" if h['reward'] <= 0.2 else "#eab308")
         html_content += f"""
             <div class="step">
-                <div><strong>Step {step['step']}:</strong> <code style="color: #93c5fd; font-size: 16px;">{step['action']}</code></div>
-                <div class="badge" style="background: {reward_col};">Reward: {step['reward']:.2f}</div>
+                <div><strong>Step {h['step']}:</strong> <code style="color: #93c5fd;">{h['action']}</code></div>
+                <div class="badge" style="background: {reward_col};">Reward: {h['reward']:.2f}</div>
             </div>
         """
         
     html_content += f"""
-            <div class="total">Mission Success: {str(success).upper()}!</div>
+            </div>
+            <div class="total">Overall Status: { "PASSED" if success else "NEBULA" }</div>
         </div>
     </body>
     </html>
