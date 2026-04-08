@@ -1,0 +1,12 @@
+name: email_env
+description: Email classification RL environment
+version: 1.0
+
+observation:
+  type: object
+
+action:
+  type: string
+
+reward:
+  type: float
