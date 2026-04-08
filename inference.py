@@ -85,10 +85,17 @@ def run():
 
     print(f"[END] success={str(success).lower()} steps={step_count} rewards={','.join(rewards)}")
 
-    # Keep the container running for Hugging Face Spaces so it doesn't show "Runtime Error"
-    import time
-    while True:
-        time.sleep(60)
+    # Start a dummy HTTP server so Hugging Face Spaces healthcheck passes and stays "Running"
+    import http.server
+    import socketserver
+    PORT = 7860
+    Handler = http.server.SimpleHTTPRequestHandler
+    print(f"Starting dummy web server on port {PORT} to keep Space healthy...")
+    try:
+        with socketserver.TCPServer(("", PORT), Handler) as httpd:
+            httpd.serve_forever()
+    except Exception as e:
+        print(f"Web server stopped: {e}")
 
 if __name__ == "__main__":
     run()
