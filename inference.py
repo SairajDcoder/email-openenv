@@ -85,6 +85,10 @@ def run():
 
     print(f"[END] success={str(success).lower()} steps={step_count} rewards={','.join(rewards)}")
 
+    # Keep the container running for Hugging Face Spaces so it doesn't show "Runtime Error"
+    import time
+    while True:
+        time.sleep(60)
 
 if __name__ == "__main__":
     run()
