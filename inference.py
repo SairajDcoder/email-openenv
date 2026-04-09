@@ -148,14 +148,23 @@ def run():
     print(f"[END] success={str(success).lower()} steps={total_steps} avg_reward={avg_reward:.2f} rewards={','.join(rewards_list)}")
 
     # Keep server running for hackathon validator
-    start_dashboard_server(history, success)
+    try:
+        start_dashboard_server(history, success)
+    except Exception as e:
+        print(f"Post-inference server could not start: {e}")
+        print("This is likely due to the port already being in use by the validator.")
+        print("Keeping process alive for compliance...")
+        import time
+        while True:
+            time.sleep(3600)
 
 
 def start_dashboard_server(history, success):
     import http.server
     import socketserver
+    import time
     
-    PORT = 7860
+    PORT = int(os.getenv("PORT", 7860))
     
     html_content = create_html(history, success)
 
@@ -181,10 +190,20 @@ def start_dashboard_server(history, success):
             self.send_response(200)
             self.end_headers()
 
-    print(f"Server at http://0.0.0.0:{PORT}")
+    print(f"Attempting to start server at http://0.0.0.0:{PORT}")
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
-        httpd.serve_forever()
+    try:
+        with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
+            print(f"Dashboard serving on port {PORT}")
+            httpd.serve_forever()
+    except OSError as e:
+        if e.errno == 98 or "Address already in use" in str(e):
+            print(f"Port {PORT} is already in use. Skipping redundant server.")
+            # Keep process alive so HF doesn't restart
+            while True:
+                time.sleep(3600)
+        else:
+            raise
 
 
 def create_html(history, success):
