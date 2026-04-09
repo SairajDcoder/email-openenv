@@ -1,6 +1,11 @@
+spec_version: 1
 name: email_env
-description: Email classification RL environment
+description: "AI-powered email classification and action agent"
 version: "1.0"
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
 
 observation:
   type: object
@@ -13,19 +18,19 @@ reward:
 
 tasks:
   - id: easy
-    name: "Easy - Spam Detection"
-    description: "Classify simple spam vs important emails"
-    grader: grader.py
+    name: "Easy Classification"
+    description: "Simple spam vs important classification"
     difficulty: easy
+    grader: grader.grade
 
   - id: medium
-    name: "Medium - Multi-category Classification"
-    description: "Classify emails into spam, important, or normal"
-    grader: grader.py
+    name: "Medium Logic"
+    description: "Multi-category reasoning and filtering"
     difficulty: medium
+    grader: grader.grade
 
   - id: hard
-    name: "Hard - Multi-step Decision Making"
-    description: "Classify and take appropriate action on complex emails"
-    grader: grader.py
+    name: "Hard Actioning"
+    description: "Complete email automation and escalation"
     difficulty: hard
+    grader: grader.grade
